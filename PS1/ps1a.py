@@ -4,8 +4,13 @@
 # Collaborators:
 # Time:
 
+from fileinput import filename
+
+from numpy import empty
 from ps1_partition import get_partitions
-import time
+from time import time
+import pandas as pd
+import numpy as np
 
 #================================
 # Part A: Transporting Space Cows
@@ -25,7 +30,13 @@ def load_cows(filename):
     a dictionary of cow name (string), weight (int) pairs
     """
     # TODO: Your code here
-    pass
+    df = pd.read_csv(filename, names=["Cows", "Weight"], header=None)
+    cows = list(df["Cows"])
+    weight = list(df["Weight"])
+
+    cows_dict = {key:value for key,value in zip(cows, weight)}
+
+    return cows_dict
 
 # Problem 2
 def greedy_cow_transport(cows,limit=10):
@@ -51,7 +62,21 @@ def greedy_cow_transport(cows,limit=10):
     trips
     """
     # TODO: Your code here
-    pass
+    cows_sorted = {key: value for key, value in sorted(cows.items(), key=lambda item: item[1], reverse=True)}
+    trips = list()
+
+    while cows_sorted:
+        total_weight = 0
+        trip = list()
+        for cow, weight in list(cows_sorted.items()):
+            if weight > limit:
+                del cows_sorted[cow]
+            elif (weight + total_weight) <= limit:
+                trip.append(cow)
+                total_weight += weight 
+                del cows_sorted[cow]
+        trips.append(trip)
+    return trips
 
 # Problem 3
 def brute_force_cow_transport(cows,limit=10):
@@ -76,7 +101,26 @@ def brute_force_cow_transport(cows,limit=10):
     trips
     """
     # TODO: Your code here
-    pass
+    potential_trips_combinations = list(get_partitions(cows.keys()))
+
+    valid_trips_solutions = list()
+
+    for potential_solution_trips in potential_trips_combinations:
+        trips_weights = dict()
+        for trip in potential_solution_trips:
+            total_weight = 0
+            for cow in trip:
+                total_weight += cows[cow]
+            trips_weights[tuple(trip)] = total_weight
+        if all(weight <= limit for weight in trips_weights.values()):
+            valid_trips_solutions.append(list(trips_weights.keys()))
+
+    min_solution = len(min(valid_trips_solutions, key=len))
+    best_trips = [trips for trips in valid_trips_solutions if len(trips) == min_solution]
+
+    return best_trips
+    
+
         
 # Problem 4
 def compare_cow_transport_algorithms():
@@ -93,4 +137,17 @@ def compare_cow_transport_algorithms():
     Does not return anything.
     """
     # TODO: Your code here
-    pass
+    filename = "ps1_cow_data.txt"
+    cows = load_cows(filename=filename)
+    t0 = time()
+    greedy_algorithm_best_solution = greedy_cow_transport(cows=cows)
+    t1 = time()
+    print("The greedy cow transport algorithm best solution is: \n", greedy_algorithm_best_solution)
+    print("The greedy cow transport algorithm took %f seconds.\n" %(t1 - t0))
+    t2 = time()
+    brute_force_best_solutions = brute_force_cow_transport(cows=cows)
+    print("The brute force algorithm best solutions are: \n", brute_force_best_solutions)
+    t3= time()
+    print("The brute force algorithm took %f seconds" %(t3 - t2))
+
+compare_cow_transport_algorithms()
